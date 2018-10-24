@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "start": "webpack-dev-server --content-base src --hot --inline"
+    "start": "webpack-dev-server --content-base src --inline",
+    "start-hot": "webpack-dev-server --content-base src --hot --inline"
   },
   "author": "evelyn",
   "license": "ISC",

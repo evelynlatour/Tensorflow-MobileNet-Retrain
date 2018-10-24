@@ -2,6 +2,7 @@ import * as tf from "@tensorflow/tfjs";
 import { mobileNetClasses} from './mobileNet-classes.js'
 import { trainingData, dataLabels } from '../images'
 
+
 const mobileNetPath = `https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json`;
 
 export const loadTruncatedMobileNet = async () => {
@@ -151,3 +152,13 @@ export const getYs = (labels) => {
 
 
 /* In order to train your model, you'll need to feed it these xs and ys */
+
+
+export const loadCustomModel = async (modelName) => {
+  // List models stored in browser
+  console.log('%c Models available in the browser...', 'color: #63DFFF')
+  console.log(await tf.io.listModels())
+  console.log(`%c Loading ${modelName}`, 'color: #49FFE0')
+  const customModel = await tf.loadModel(`indexeddb://${modelName}`)
+  return customModel
+} 

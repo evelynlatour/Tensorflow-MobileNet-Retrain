@@ -11,6 +11,7 @@ import red4 from './red/red4.jpg'
 import red5 from './red/red5.jpg'
 
 import redTest1 from './test_data/red_test_1.jpg'
+import blueTest1 from './test_data/blue_test_1.png'
 
 const trainingData = [ 
   blue1, blue2, blue3, blue4, blue5,
@@ -22,7 +23,7 @@ const dataLabels = [
   'red', 'red', 'red', 'red', 'red'
 ]
 
-const testData = redTest1
+const testData = { redTest1, blueTest1 }
 
 
 export { trainingData, dataLabels, testData }
