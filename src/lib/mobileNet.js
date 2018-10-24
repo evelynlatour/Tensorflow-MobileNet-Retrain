@@ -3,16 +3,13 @@ import { mobileNetClasses} from './mobileNet-classes.js'
 import { trainingData, dataLabels } from '../images'
 
 const mobileNetPath = `https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json`;
-const numClasses = 5;
 
-const loadTruncatedMobileNet = async () => {
+export const loadTruncatedMobileNet = async () => {
   try {
     const mobileNet = await tf.loadModel(mobileNetPath);
     // mobileNet.summary();
     const layer = mobileNet.getLayer(`conv_pw_13_relu`); //final activation layer that is not softmax
-    // console.log(layer);
     const truncatedModel = tf.model({ inputs: mobileNet.inputs, outputs: layer.output });
-    // console.log(truncatedModel);
     return truncatedModel;
   } catch (err) {
     console.log(err);
@@ -24,8 +21,7 @@ const imageToTensor = (imageSrc) => {
     const img = new Image();
     img.src = imageSrc;
     img.onload = () => {
-      console.log(img.height);
-      console.log(img.width);
+      console.log(img.height, img.width);
       const tensorImage = tf.fromPixels(img);
       return resolve(tensorImage);
     };
@@ -60,27 +56,28 @@ const formatImage = async (img) => {
     newTensor.dispose();
     const resized = resizeImageTensor(cropped)
     const batched = batchImageTensor(resized)
-    console.log('this is the final format of your image tensor: ', batched)
+    // console.log('this is the final format of your image tensor: ', batched)
     return batched;
   })
 };
 
 /* Predicts image content using basic MobileNet model & categories */
-export const predictFromMobileNet = async (img) => {
+const predictFromMobileNet = async (img) => {
   const mobileNet = await tf.loadModel(mobileNetPath);
   const imageToPredict = await formatImage(img)
   const prediction = await mobileNet.predict(imageToPredict)
-  // prediction.print();
   const label = prediction.as1D().argMax().dataSync()[0]
   console.log('Predicted label key is:', label)
   console.log('Predicted class name is:', mobileNetClasses[label])
 }
 
+/* get Xs for one image at a time --> see getXs() for batching */
 export const predictFromTruncated = async (img) => {
   const truncatedModel = await loadTruncatedMobileNet()
   const imageToPredict = await formatImage(img)
   const prediction = await truncatedModel.predict(imageToPredict)
-  prediction.print(); //these are the xs...
+  // prediction.print(); //these are the xs
+  return prediction
 }
 
 ////////////////////////////// Load your own images...
@@ -107,6 +104,8 @@ export const getXs = async (images) => {
     }
   }
   xs.print();
+  console.log(xs) // shape of Xs: [10,7,7,256] where 10 is the batch size
+  return xs;
 }
 
 
@@ -118,14 +117,14 @@ export const oneHot = (labelIndex, numClasses) => {
   return tf.tidy(() => tf.oneHot(tf.tensor1d([labelIndex]).toInt(), numClasses));
 };
 
-const labelObjectMaker = (labels) => {
+export const labelObjectMaker = (labels) => {
   let labelObj = {};
   labels.forEach(label => {
-    if (!labelObj[label]) {
+    if (labelObj[label] === undefined) {
       labelObj[label] = Object.keys(labelObj).length
     }
   })
-  console.log(labelObj)
+  console.log('this is the label object key: ', labelObj)
   return labelObj
 }
 
@@ -147,6 +146,7 @@ export const getYs = (labels) => {
     }
   })
   ys.print();
+  return ys;
 }
 
 
