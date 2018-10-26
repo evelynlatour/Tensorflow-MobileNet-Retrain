@@ -25,7 +25,7 @@ export const trainModel = async (xs, ys) => {
   })
 
   await model.compile({
-    optimizer: tf.train.adam(0.0001),
+    optimizer: tf.train.adam(0.0001), //.001 may be enough to start
     loss: 'categoricalCrossentropy', // this becomes binary since multilabel is viewed as a set of n, independent two-class problems
     metrics: ['accuracy'],
   })

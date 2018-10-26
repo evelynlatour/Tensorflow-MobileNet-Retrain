@@ -1,5 +1,5 @@
 import { ConsoleDisplay } from './lib/display'
-import { getXs, getYs, loadCustomModel } from './lib/mobileNet'
+import { getXs, getYs, loadCustomModel, predictFromTruncated } from './lib/mobileNet'
 import { trainModel, predict } from './lib/trainNewModel'
 import { trainingData, dataLabels, testData } from './images'
 import redBlueModel from '../tfjs-models/red-blue-model.json'
@@ -18,7 +18,6 @@ const run = async () => {
 }
 
 // run();
-
 
 // List models in Local Storage.
 // loadCustomModel('red-blue-model')

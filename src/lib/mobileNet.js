@@ -105,7 +105,7 @@ export const getXs = async (images) => {
     }
   }
   xs.print();
-  console.log(xs) // shape of Xs: [10,7,7,256] where 10 is the batch size
+  console.log(xs) // shape of Xs: [10,7,7,256] where 10 is the batch size (from testing 5 red & 5 blue)
   return xs;
 }
 
