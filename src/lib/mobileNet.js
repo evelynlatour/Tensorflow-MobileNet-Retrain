@@ -22,7 +22,7 @@ const imageToTensor = (imageSrc) => {
     const img = new Image();
     img.src = imageSrc;
     img.onload = () => {
-      console.log(img.height, img.width);
+      // console.log(img.height, img.width);
       const tensorImage = tf.fromPixels(img);
       return resolve(tensorImage);
     };
@@ -89,24 +89,29 @@ export const predictFromTruncated = async (img) => {
 /* Function to get the xs --> all the activations from the truncated MobileNet 
 model after passing through our training data  */
 export const getXs = async (images) => {
-  let xs;
-  const truncatedModel = await loadTruncatedMobileNet()
-  for (let i = 0; i < images.length; i++) {
-    const image = images[i];
-    const imageToPredict = await formatImage(image)
-    const processedImage = await truncatedModel.predict(imageToPredict)
+  try {
+    let xs;
+    const truncatedModel = await loadTruncatedMobileNet()
+    console.log('%c Converting images to tensors...', 'color: #b159ff; font-weight: bold')
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const imageToPredict = await formatImage(image)
+      const processedImage = await truncatedModel.predict(imageToPredict)
 
-    if (!xs) { // handle first run through
-      xs = tf.keep(processedImage)
-    } else { //handle all others
-      const prevXs = xs;
-      xs = tf.keep(prevXs.concat(processedImage, 0));
-      prevXs.dispose();
+      if (!xs) { // handle first run through
+        xs = tf.keep(processedImage)
+      } else { //handle all others
+        const prevXs = xs;
+        xs = tf.keep(prevXs.concat(processedImage, 0));
+        prevXs.dispose();
+      }
     }
+    // xs.print();
+    console.log('%c These are your xs: ', 'color: #ffb85b; font-weight: bold' , xs) // shape of Xs: [10,7,7,256] where 10 is the batch size (from testing 5 red & 5 blue)
+    return xs;
+  } catch (err) {
+    console.log(err)
   }
-  xs.print();
-  console.log(xs) // shape of Xs: [10,7,7,256] where 10 is the batch size (from testing 5 red & 5 blue)
-  return xs;
 }
 
 
@@ -118,6 +123,7 @@ export const oneHot = (labelIndex, numClasses) => {
   return tf.tidy(() => tf.oneHot(tf.tensor1d([labelIndex]).toInt(), numClasses));
 };
 
+// Use only if you do not have a predefined label object (e.g. for an array like red/blue testing)
 export const labelObjectMaker = (labels) => {
   let labelObj = {};
   labels.forEach(label => {
@@ -129,8 +135,9 @@ export const labelObjectMaker = (labels) => {
   return labelObj
 }
 
-export const getYs = (labels) => {
-  const classes = labelObjectMaker(labels);
+export const getYs = (labels, labelKey) => {
+  // const classes = labelObjectMaker(labels); // see note above on when to use this func
+  const classes = labelKey
   const classLength = Object.keys(classes).length;
   let ys;
 
@@ -146,13 +153,18 @@ export const getYs = (labels) => {
       y.dispose();
     }
   })
-  ys.print();
+  // ys.print();
+  console.log('%c These are your ys: ', 'color: #ffb85b; font-weight: bold' , ys)
   return ys;
 }
 
 
 /* In order to train your model, you'll need to feed it these xs and ys */
 
+export const listModelsInLocalStorage = async () => {
+  console.log('%c Models available in the browser...', 'color: #63DFFF')
+  console.log(await tf.io.listModels())
+}
 
 export const loadCustomModel = async (modelName) => {
   // List models stored in browser

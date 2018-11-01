@@ -1,10 +1,9 @@
 import * as tf from '@tensorflow/tfjs'
-import { predictFromTruncated } from './mobileNet'
+import { getXs, getYs, predictFromTruncated } from './mobileNet'
 
-const numClasses = 2; // already handles multi-class
-let model;
 
-export const trainModel = async (xs, ys) => {
+export const compileModel = (numClasses) => {
+  let model;
   model = tf.sequential({
     layers: [
       //This layer only performs a reshape so that we can use it in a dense layer
@@ -24,28 +23,82 @@ export const trainModel = async (xs, ys) => {
     ],
   })
 
-  await model.compile({
-    optimizer: tf.train.adam(0.0001), //.001 may be enough to start
-    loss: 'categoricalCrossentropy', // this becomes binary since multilabel is viewed as a set of n, independent two-class problems
+  model.compile({
+    optimizer: tf.train.adam(0.0001), 
+    loss: 'categoricalCrossentropy', // for multi-label this becomes 'binary' since multilabel is viewed as a set of n, independent two-class problems
     metrics: ['accuracy'],
   })
 
-  // may want to return/save your model here and then do fit() func in a sep func because you'll
-  // need to call it once every batch (the whole dataset prob can't fit into memory)
+  console.log('%c Multi-class Model Compiled:', 'color: #4295f4; font-weight: bold', model)
+  // model.summary()
+  return model
+}
 
+// tfjs docs recommend putting this inside a for loop and passing a "batch" of data at a time
+// callbacks available: onTrainBegin, onTrainEnd, onEpochBegin, onEpochEnd, onBatchBegin, onBatchEnd
+// will batch from your total number passed through - e.g. 
+// batchSize 20 with 32 images means 2 steps per epoch
+// batchSize 10 and 32 images means 4 steps per epoch (the last batch would only have 2 images tho)
+
+export const fitModel = async (model, xs, ys, startingEpoch) => {
+  console.log('~starting epoch~', startingEpoch)
   await model.fit(xs, ys, {
-    //batch size of 1 assumed if not specified?
-    epochs: 10,
+    batchSize: 7,
+    epochs: 15, //10
+    initialEpoch: startingEpoch,
     shuffle: true,
     callbacks: {
       onBatchEnd: async (batch, logs) => {
-        console.log('Loss is: ', logs.loss.toFixed(5))
+        console.log('%c Loss is: ', 'color: #ffb85b', logs.loss.toFixed(5))
       },
+      onEpochBegin: async (epoch) => console.log('new epoch', epoch),
+      onEpochEnd: async (epoch, logs) => {
+        if ((epoch + 1) % 3 === 0) model.stopTraining = true
+      }
     },
   })
-  // model.print()
+  // console.log('%c Fitting completed, your model will be printed below', 'color: #4295f4; font-weight: bold')
+  console.log('model', model)
+  // console.log(model) //model.model.history
   return model
 }
+
+/* tf.util provides more methods! */
+
+
+export const trainShuffledBatches = async (trainingData, trainingLabels, numItems, labelKey, numClasses, batchSize) => {
+  try {
+    let batchStart = 0
+    let currentBatch = 1
+    let startingEpoch = 0
+    let model = compileModel(numClasses)
+    const totalBatches = numItems/batchSize
+    const shuffleMap = tf.util.createShuffledIndices(numItems)
+    while (batchStart < numItems ) {
+      let dataBatch = []
+      let labelBatch = []
+      for (let i = batchStart; i < (batchStart + batchSize); i++){ // test training 2 batches of 65 each for 130 total
+        const newIndex = shuffleMap[i] // gives you the index to pull the image/label from
+        dataBatch.push(trainingData[newIndex])
+        labelBatch.push(trainingLabels[newIndex])
+      }
+      const xs = await getXs(dataBatch)
+      const ys = await getYs(labelBatch, labelKey)
+      const trainedModel = await fitModel(model, xs, ys, startingEpoch)
+      console.log(`%c Batch ${currentBatch} of ${totalBatches} completed successfully`, 'color: #4295f4; font-weight: bold')
+      // console.log('this was the data batch', dataBatch)
+      // console.log('this was the label batch', labelBatch)
+      batchStart += batchSize
+      currentBatch++
+      startingEpoch += 10
+      model = trainedModel
+    }
+    return model
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 
 export const predict = async (myModel, image, expectedLabel) => {
   try {
