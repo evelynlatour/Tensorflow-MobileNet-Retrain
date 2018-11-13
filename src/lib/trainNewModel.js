@@ -24,27 +24,24 @@ export const compileModel = (numClasses) => {
   })
 
   model.compile({
-    optimizer: tf.train.adam(0.0001), 
+    optimizer: tf.train.adam(0.0001),
     loss: 'categoricalCrossentropy', // for multi-label this becomes 'binary' since multilabel is viewed as a set of n, independent two-class problems
     metrics: ['accuracy'],
   })
 
-  console.log('%c Multi-class Model Compiled:', 'color: #4295f4; font-weight: bold', model)
+  console.log('%c Multi-class Model Compiled:', 'color: #4295f4; font-weight: bold', model)  
   // model.summary()
   return model
 }
 
-// tfjs docs recommend putting this inside a for loop and passing a "batch" of data at a time
 // callbacks available: onTrainBegin, onTrainEnd, onEpochBegin, onEpochEnd, onBatchBegin, onBatchEnd
-// will batch from your total number passed through - e.g. 
 // batchSize 20 with 32 images means 2 steps per epoch
-// batchSize 10 and 32 images means 4 steps per epoch (the last batch would only have 2 images tho)
+// batchSize 10 and 32 images means 4 steps per epoch (the last batch would only have 2 images)
 
 export const fitModel = async (model, xs, ys, startingEpoch) => {
-  console.log('~starting epoch~', startingEpoch)
   await model.fit(xs, ys, {
-    batchSize: 7,
-    epochs: 15, //10
+    batchSize: 10, // dictates steps per epoch
+    epochs: 100, // make sure this aligns w/ starting epoch in trainShuffledBatches
     initialEpoch: startingEpoch,
     shuffle: true,
     callbacks: {
@@ -53,14 +50,12 @@ export const fitModel = async (model, xs, ys, startingEpoch) => {
       },
       onEpochBegin: async (epoch) => console.log('new epoch', epoch),
       onEpochEnd: async (epoch, logs) => {
-        if ((epoch + 1) % 3 === 0) model.stopTraining = true
+        if ((epoch + 1) % 50 === 0) model.stopTraining = true
       }
     },
   })
-  // console.log('%c Fitting completed, your model will be printed below', 'color: #4295f4; font-weight: bold')
-  console.log('model', model)
-  // console.log(model) //model.model.history
-  return model
+  console.log('model', model) //model.model.history 
+  return model 
 }
 
 /* tf.util provides more methods! */
@@ -74,10 +69,10 @@ export const trainShuffledBatches = async (trainingData, trainingLabels, numItem
     let model = compileModel(numClasses)
     const totalBatches = numItems/batchSize
     const shuffleMap = tf.util.createShuffledIndices(numItems)
-    while (batchStart < numItems ) {
+    while (batchStart < numItems ) { 
       let dataBatch = []
       let labelBatch = []
-      for (let i = batchStart; i < (batchStart + batchSize); i++){ // test training 2 batches of 65 each for 130 total
+      for (let i = batchStart; i < (batchStart + batchSize); i++){ 
         const newIndex = shuffleMap[i] // gives you the index to pull the image/label from
         dataBatch.push(trainingData[newIndex])
         labelBatch.push(trainingLabels[newIndex])
@@ -86,12 +81,10 @@ export const trainShuffledBatches = async (trainingData, trainingLabels, numItem
       const ys = await getYs(labelBatch, labelKey)
       const trainedModel = await fitModel(model, xs, ys, startingEpoch)
       console.log(`%c Batch ${currentBatch} of ${totalBatches} completed successfully`, 'color: #4295f4; font-weight: bold')
-      // console.log('this was the data batch', dataBatch)
-      // console.log('this was the label batch', labelBatch)
       batchStart += batchSize
       currentBatch++
-      startingEpoch += 10
-      model = trainedModel
+      startingEpoch += 50 // make sure this aligns with epochs in fitModel()
+      model = trainedModel // ensures that prev trained model gets passed through in next training round
     }
     return model
   } catch (err) {
@@ -100,8 +93,28 @@ export const trainShuffledBatches = async (trainingData, trainingLabels, numItem
 }
 
 
-export const predict = async (myModel, image, expectedLabel) => {
+export const listModelsInLocalStorage = async () => {
+  console.log('%c Models available in the browser...', 'color: #63DFFF')
+  console.log(await tf.io.listModels())
+}
+
+export const removeModelFromLocalStorage = async (modelName) => {
+  console.log(`%c Removing model "${modelName}" from local storage`, 'color: #f4425c')
+  tf.io.removeModel(`indexeddb://${modelName}`)
+}
+
+
+export const loadCustomModel = async (modelName) => {
+  console.log(`%c Loading ${modelName}`, 'color: #49FFE0')
+  const customModel = await tf.loadModel(`indexeddb://${modelName}`)
+  return customModel
+} 
+
+
+export const predict = async (modelName, image, labelKey, expectedLabel) => {
   try {
+    const myModel = await loadCustomModel(modelName)
+
     //make a prediction through truncated mobilenet, getting the internal 
     //activation output from the model
     const activation = await predictFromTruncated(image) //[1,7,7,256]
@@ -111,7 +124,9 @@ export const predict = async (myModel, image, expectedLabel) => {
     prediction.print()
     // Returns the index with the maximum probability. This number corresponds
     // to the class the model thinks is the most probable given the input.
-    console.log(`prediction is index ${prediction.as1D().argMax().dataSync()[0]} from label object`)
+    console.log(labelKey)
+    const predictedLabelIndex = prediction.as1D().argMax().dataSync()[0]
+    console.log(`${modelName} model predicts ${Object.keys(labelKey)[predictedLabelIndex]} expected ${expectedLabel}`)
     return prediction.as1D().argMax();
   } catch (err) {
     console.log(err)

@@ -161,16 +161,6 @@ export const getYs = (labels, labelKey) => {
 
 /* In order to train your model, you'll need to feed it these xs and ys */
 
-export const listModelsInLocalStorage = async () => {
-  console.log('%c Models available in the browser...', 'color: #63DFFF')
-  console.log(await tf.io.listModels())
-}
 
-export const loadCustomModel = async (modelName) => {
-  // List models stored in browser
-  console.log('%c Models available in the browser...', 'color: #63DFFF')
-  console.log(await tf.io.listModels())
-  console.log(`%c Loading ${modelName}`, 'color: #49FFE0')
-  const customModel = await tf.loadModel(`indexeddb://${modelName}`)
-  return customModel
-} 
+
+

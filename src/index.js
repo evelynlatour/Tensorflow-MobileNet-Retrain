@@ -1,11 +1,10 @@
 import {
   getXs,
   getYs,
-  loadCustomModel,
-  listModelsInLocalStorage,
   predictFromTruncated,
 } from './lib/mobileNet'
-import { predict, trainShuffledBatches } from './lib/trainNewModel'
+import { predict, trainShuffledBatches, compileModel, fitModel, listModelsInLocalStorage, loadCustomModel, removeModelFromLocalStorage
+} from './lib/trainNewModel'
 import { trainingData, dataLabels, testData } from './images'
 
 import {
@@ -19,10 +18,23 @@ import {
   straplessDataLabels,
 } from '../training-data'
 
+import {  
+  noSleeveTest1,
+  noSleeveTest2,
+  longSleeveTest1,
+  longSleeveTest2,
+  shortSleeveTest1,
+  shortSleeveTest2, 
+} from '../test-data'
+
 import { topSleeveClassKey } from '../training-data/label-index.js'
 
 /* List models in Local Storage */
 // listModelsInLocalStorage()
+
+/* Remove model from Local Storage */
+// removeModelFromLocalStorage('...')
+
 
 const allTopSleeveTrainingData = longSleeveTrainingData.concat(
   noSleeveTrainingData,
@@ -35,7 +47,7 @@ const allTopSleeveTrainingLabels = longSleeveDataLabels.concat(
   straplessDataLabels
 )
 
-const trainAndSaveNewModel = async (
+const trainWithBatches = async (
   trainingData,
   trainingLabels,
   numItems,
@@ -66,36 +78,46 @@ const trainAndSaveNewModel = async (
   }
 }
 
-trainAndSaveNewModel(
-  allTopSleeveTrainingData,
-  allTopSleeveTrainingLabels,
-  130,
-  topSleeveClassKey,
-  4,
-  26,
-  'top-sleeve'
-)
+
+// trainWithBatches(
+//   allTopSleeveTrainingData,
+//   allTopSleeveTrainingLabels,
+//   140,
+//   topSleeveClassKey,
+//   4,
+//   70, // 140/70 = 2 runs
+//   'top-sleeve-batched2'
+// )
+
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-const { blueTest1, redTest1 } = testData
 
-const run = async () => {
-  const xs = await getXs(trainingData)
-  const ys = await getYs(dataLabels)
-  const trainedModel = await trainModel(xs, ys)
-  // trainedModel.save('indexeddb://red-blue-model')
-  // predict(trainedModel, blueTest1)
+
+// predict('top-sleeve-batched2', noSleeveTest1, topSleeveClassKey, 'no sleeve')
+// predict('top-sleeve-batched2', noSleeveTest2, topSleeveClassKey, 'no sleeve')
+// predict('top-sleeve-batched2', shortSleeveTest1, topSleeveClassKey, 'short sleeve')
+// predict('top-sleeve-batched2', shortSleeveTest2, topSleeveClassKey, 'short sleeve')
+// predict('top-sleeve-batched2', longSleeveTest1, topSleeveClassKey, 'long sleeve')
+// predict('top-sleeve-batched2', longSleeveTest2, topSleeveClassKey, 'long sleeve')
+
+
+/*
+const trainWithoutBatching = async (trainingData, dataLabels, labelKey, numClasses, localStorageName) => {
+  try {
+    const xs = await getXs(trainingData)
+    const ys = await getYs(dataLabels, labelKey)
+    const compiledModel = compileModel(numClasses)
+    const trainedModel = await fitModel(compiledModel, xs, ys, 0)
+    console.log('%c Batch completed successfully', 'color: #4295f4; font-weight: bold')
+    trainedModel.save(`indexeddb://${localStorageName}`)
+    return trainedModel
+  } catch (err) {
+    console.log(err)
+  }
 }
 
-// const trainBatch = async (model, labelKey, trainingData, dataLabels) => {
-//   try {
-//     const xs = await getXs(trainingData)
-//     const ys = await getYs(dataLabels, labelKey)
-//     const trainedModel = await fitModel(model, xs, ys)
-//     console.log('%c Batch completed successfully', 'color: #4295f4; font-weight: bold')
-//     return trainedModel
-//   } catch (err) {
-//     console.log(err)
-//   }
-// }
+// trainWithoutBatching(allTopSleeveTrainingData, allTopSleeveTrainingLabels, topSleeveClassKey, 4, 'top-sleeve-not-batched')
+
+*/
