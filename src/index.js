@@ -1,11 +1,13 @@
+import { predictFromTruncated } from './lib/mobileNet'
+import { getXs, getYs } from './lib/createXYs'
+import { trainShuffledBatches, compileModel, fitModel } from './lib/trainNewModel'
+
 import {
-  getXs,
-  getYs,
-  predictFromTruncated,
-} from './lib/mobileNet'
-import { predict, trainShuffledBatches, compileModel, fitModel, listModelsInLocalStorage, loadCustomModel, removeModelFromLocalStorage
-} from './lib/trainNewModel'
-import { trainingData, dataLabels, testData } from './images'
+  predict,
+  listModelsInLocalStorage,
+  loadCustomModel,
+  removeModelFromLocalStorage,
+} from './lib/manageLocalModels'
 
 import {
   longSleeveTrainingData,
@@ -18,23 +20,9 @@ import {
   straplessDataLabels,
 } from '../training-data'
 
-import {  
-  noSleeveTest1,
-  noSleeveTest2,
-  longSleeveTest1,
-  longSleeveTest2,
-  shortSleeveTest1,
-  shortSleeveTest2, 
-} from '../test-data'
+import { testData } from '../test-data'
 
 import { topSleeveClassKey } from '../training-data/label-index.js'
-
-/* List models in Local Storage */
-// listModelsInLocalStorage()
-
-/* Remove model from Local Storage */
-// removeModelFromLocalStorage('...')
-
 
 const allTopSleeveTrainingData = longSleeveTrainingData.concat(
   noSleeveTrainingData,
@@ -45,6 +33,42 @@ const allTopSleeveTrainingLabels = longSleeveDataLabels.concat(
   noSleeveDataLabels,
   shortSleeveDataLabels,
   straplessDataLabels
+)
+
+/* List models in Local Storage */
+// listModelsInLocalStorage()
+
+/* Remove model from Local Storage */
+// removeModelFromLocalStorage('...')
+
+// Check that your data is right before training!
+console.log(
+  'longsleeve data: ',
+  longSleeveTrainingData.length,
+  '\nlabels: ',
+  `"${longSleeveDataLabels[0]}"`,
+  longSleeveDataLabels.length
+)
+console.log(
+  'no sleeve data: ',
+  noSleeveTrainingData.length,
+  '\nlabels: ',
+  `"${noSleeveDataLabels[0]}"`,
+  noSleeveDataLabels.length
+)
+console.log(
+  'short sleeve data: ',
+  shortSleeveTrainingData.length,
+  '\nlabels: ',
+  `"${shortSleeveDataLabels[0]}"`,
+  shortSleeveDataLabels.length
+)
+console.log(
+  'strapless data: ',
+  straplessTrainingData.length,
+  '\nlabels: ',
+  `"${straplessDataLabels[0]}"`,
+  straplessDataLabels.length
 )
 
 const trainWithBatches = async (
@@ -78,30 +102,25 @@ const trainWithBatches = async (
   }
 }
 
-
 // trainWithBatches(
 //   allTopSleeveTrainingData,
 //   allTopSleeveTrainingLabels,
-//   140,
+//   1200,
 //   topSleeveClassKey,
 //   4,
-//   70, // 140/70 = 2 runs
-//   'top-sleeve-batched2'
+//   1200, // numitems/batchsize = num runs; for example, 140/70 = 2 runs 140/35 = 4 runs
+//   'top-sleeve-batched-v4.3'
 // )
 
+const predictor = async (modelName, labelKey) => {
+  for (const testImage in testData) {
+    await predict(modelName, testData[testImage], labelKey, testImage)
+  }
+}
 
+// predictor('top-sleeve-batched-v4.3', topSleeveClassKey)
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-
-
-
-// predict('top-sleeve-batched2', noSleeveTest1, topSleeveClassKey, 'no sleeve')
-// predict('top-sleeve-batched2', noSleeveTest2, topSleeveClassKey, 'no sleeve')
-// predict('top-sleeve-batched2', shortSleeveTest1, topSleeveClassKey, 'short sleeve')
-// predict('top-sleeve-batched2', shortSleeveTest2, topSleeveClassKey, 'short sleeve')
-// predict('top-sleeve-batched2', longSleeveTest1, topSleeveClassKey, 'long sleeve')
-// predict('top-sleeve-batched2', longSleeveTest2, topSleeveClassKey, 'long sleeve')
-
 
 /*
 const trainWithoutBatching = async (trainingData, dataLabels, labelKey, numClasses, localStorageName) => {
