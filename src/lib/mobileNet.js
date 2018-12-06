@@ -21,7 +21,6 @@ const imageToTensor = (imageSrc) => {
     const img = new Image();
     img.src = imageSrc;
     img.onload = () => {
-      // console.log(img.height, img.width);
       const tensorImage = tf.fromPixels(img);
       return resolve(tensorImage);
     };
@@ -31,21 +30,21 @@ const imageToTensor = (imageSrc) => {
 // imageToTensor(testImage).then(result => console.log(result))
 
 const cropImageTensor = (img) => {
-  const size = Math.min(img.shape[0], img.shape[1]);
-  const centerHeight = img.shape[0] / 2;
-  const beginHeight = centerHeight - size / 2;
-  const centerWidth = img.shape[1] / 2;
-  const beginWidth = centerWidth - size / 2;
-  return img.slice([beginHeight, beginWidth, 0], [size, size, 3]);
+  return tf.tidy(() => {
+    const size = Math.min(img.shape[0], img.shape[1]);
+    const centerHeight = img.shape[0] / 2;
+    const beginHeight = centerHeight - size / 2;
+    const centerWidth = img.shape[1] / 2;
+    const beginWidth = centerWidth - size / 2;
+    return img.slice([beginHeight, beginWidth, 0], [size, size, 3]);
+  })
 };
 
-const resizeImageTensor = (img) => {
-  return tf.image.resizeBilinear(img, [224, 224]);
-}
-
 const batchImageTensor = (img) => {
-  const batched = img.expandDims(0);
-  return batched.toFloat().div(tf.scalar(127)).sub(tf.scalar(1));
+  return tf.tidy(() => {
+    const batched = img.expandDims(0);
+    return batched.toFloat().div(tf.scalar(127)).sub(tf.scalar(1));
+  })
 }
 
 /* Formats images into correctly sized tensors for the MobileNet model */
@@ -54,7 +53,7 @@ export const formatImage = async (img) => {
   return tf.tidy(() => { 
     const cropped = cropImageTensor(newTensor)
     newTensor.dispose();
-    const resized = resizeImageTensor(cropped)
+    const resized = tf.image.resizeBilinear(cropped, [224, 224]);
     const batched = batchImageTensor(resized)
     // console.log('this is the final format of your image tensor: ', batched)
     return batched;

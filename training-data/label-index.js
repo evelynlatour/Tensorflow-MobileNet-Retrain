@@ -1,10 +1,5 @@
 
 /* Mutually Exclusive Classes for Tops: SLEEVE */
-const short_sleeve = 'short_sleeve'
-const long_sleeve = 'long_sleeve'
-const no_sleeve = 'no_sleeve'
-const strapless = 'strapless'
-
 export const topSleeveClassKey = {
   shortSleeve: 0,
   longSleeve: 1,
@@ -12,17 +7,15 @@ export const topSleeveClassKey = {
   strapless: 3
 }
 
-/* Mutually Exclusive Classes for Tops: TYPE */
-export const topTypeClassKey = {
+/* Mutually Exclusive Classes for Tops: CATEGORY */
+export const topCategoryClassKey = {
   shirt: 0,
-  sweater: 1,
-  sweatshirt: 2,
-  hoodie: 3,
-  blouse: 4,
-  collared: 5,
+  tank: 1,
+  blouse: 2,
+  collaredButton: 3,
+  sweater: 4,
+  sweatshirt: 5,
   cardigan: 6,
-  blazer: 7,
-  duster: 8
 }
 
 /* Mutually Exclusive Classes for Tops: FIT */

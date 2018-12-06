@@ -9,8 +9,8 @@ export const getXs = async (images) => {
     const truncatedModel = await loadTruncatedMobileNet()
     console.log('%c Converting images to tensors...', 'color: #b159ff; font-weight: bold')
     for (let i = 0; i < images.length; i++) {
-      const image = images[i];
-      const imageToPredict = await formatImage(image)
+      console.log(i)
+      const imageToPredict = await formatImage(images[i])
       const processedImage = await truncatedModel.predict(imageToPredict)
 
       if (!xs) { // handle first run through
@@ -19,6 +19,8 @@ export const getXs = async (images) => {
         const prevXs = xs;
         xs = tf.keep(prevXs.concat(processedImage, 0));
         prevXs.dispose();
+        imageToPredict.dispose();
+        processedImage.dispose();
       }
     }
     // xs.print();

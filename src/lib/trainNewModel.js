@@ -23,7 +23,7 @@ export const compileModel = (numClasses) => {
   })
 
   model.compile({
-    optimizer: tf.train.adam(0.0005),
+    optimizer: tf.train.adam(0.0001),
     loss: 'categoricalCrossentropy', // for multi-label this becomes 'binary' since multilabel is viewed as a set of n, independent two-class problems
     metrics: ['accuracy'],
   })
@@ -36,8 +36,8 @@ export const compileModel = (numClasses) => {
 
 export const fitModel = async (model, xs, ys, startingEpoch) => {
   await model.fit(xs, ys, {
-    batchSize: 50, // dictates steps per epoch
-    epochs: 60, // make sure this aligns w/ starting epoch in trainShuffledBatches
+    batchSize: 125, // dictates steps per epoch
+    epochs: 250, // make sure this aligns w/ starting epoch in trainShuffledBatches
     initialEpoch: startingEpoch,
     shuffle: true,
     callbacks: {
@@ -46,7 +46,7 @@ export const fitModel = async (model, xs, ys, startingEpoch) => {
       },
       onEpochBegin: async (epoch) => console.log('new epoch', epoch),
       onEpochEnd: async (epoch, logs) => {
-        if ((epoch + 1) % 60 === 0) model.stopTraining = true
+        if ((epoch + 1) % 50 === 0) model.stopTraining = true
       }
     },
   })
@@ -74,15 +74,15 @@ export const trainShuffledBatches = async (trainingData, trainingLabels, numItem
         dataBatch.push(trainingData[newIndex])
         labelBatch.push(trainingLabels[newIndex])
       }
-      // console.log(dataBatch)
-      // console.log(labelBatch)
       const xs = await getXs(dataBatch)
       const ys = await getYs(labelBatch, labelKey)
       const trainedModel = await fitModel(model, xs, ys, startingEpoch)
       console.log(`%c Batch ${currentBatch} of ${totalBatches} completed successfully`, 'color: #4295f4; font-weight: bold')
+      xs.dispose();
+      ys.dispose();
       batchStart += batchSize
       currentBatch++
-      startingEpoch += 60 // make sure this aligns with epochs in fitModel()
+      startingEpoch += 50 // make sure this aligns with epochs in fitModel()
       model = trainedModel // ensures that prev trained model gets passed through in next training round
     }
 
